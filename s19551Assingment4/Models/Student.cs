@@ -10,7 +10,8 @@ namespace s19551Assingment4.Models
         public string IndexNumber { get; set; }
         public string Name { get; set; }
         public string Surname { get; set; }
-        public string Birthdate { get; set; }
-        public int IdEnroll { get; set; }
+        public DateTime Birthdate { get; set; }
+        public int Semester { get; set; }
+        public string Study { get; set; }
     }
 }

@@ -30,7 +30,11 @@ namespace s19551Assingment4.Controllers
             using (SqlCommand command = new SqlCommand())
             {
                 command.Connection = connection;
-                command.CommandText = "select * from student";
+                command.CommandText = "select s.FirstName, s.LastName, s.BirthDate, st.Name as Studies, e.Semester " +//
+                                      "from student s "+//
+                                      "join Enrollment e on s.idEnrollment=e.idEnrollment " +//
+                                      "join Studies st on st.idStudy=e.idStudy;";
+                                                
 
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
@@ -40,6 +44,9 @@ namespace s19551Assingment4.Controllers
                     var student = new Student();
                     student.Name = reader["FirstName"].ToString();
                     student.Surname = reader["LastName"].ToString();
+                    student.Birthdate = DateTime.Parse(reader["BirthDate"].ToString());
+                    student.Study = reader["Studies"].ToString();
+                    student.Semester = int.Parse(reader["Semester"].ToString());
                     result.Add(student);
                 }
             }
@@ -47,33 +54,37 @@ namespace s19551Assingment4.Controllers
             return Ok(result);
         }
 
+
         [HttpGet("{indexNumber}")]
-        public IActionResult GetSemester(string indexNumber) {
-            var result = new List<Student>();
+        public IActionResult GetSemester(string indexNumber)
+        {
+            string semester = null;
 
             using (SqlConnection connection = new SqlConnection(connectionString))
             using (SqlCommand command = new SqlCommand())
             {
                 command.Connection = connection;
-                command.CommandText = "select * from student as s " +
-                                        "join enrollment as e on s.idenrollment = e.idenrollment " +
-                                        "where s.indexnumber=@index";
+                command.CommandText = "select e.semester from student as s " +//
+                                      "join enrollment as e on s.idenrollment = e.idenrollment " +//
+                                      "where s.indexnumber=@index";
 
-                command.Parameters.AddWithValue("index",indexNumber);
+                command.Parameters.AddWithValue("index", indexNumber);
 
                 connection.Open();
                 SqlDataReader reader = command.ExecuteReader();
 
+
                 if (reader.Read())
                 {
-                    var student = new Student();
-                    student.Name = reader["FirstName"].ToString();
-                    student.Surname = reader["LastName"].ToString();
-                    result.Add(student);
+                    semester = reader["Semester"].ToString();
+                }
+                else
+                {
+                    semester = "Index number does not exist!";
                 }
             }
 
-            return Ok(result);
+            return Ok(indexNumber + ":" + semester);
         }
 
     }
