@@ -13,7 +13,7 @@ namespace s19551Assingment4.Services
             using (SqlConnection connection = new SqlConnection(Static.CONNECTION_STRING))
             {
                 string idStudy;
-                string enrollmentId;
+                int enrollmentId;
                 using (SqlCommand command = new SqlCommand())
                 {
                     command.CommandText = "select IdStudy from studies where name=@name";
@@ -31,6 +31,7 @@ namespace s19551Assingment4.Services
                     }
 
                     idStudy = query["IdStudy"].ToString();
+                    query.Close();
                 }
 
                 using (SqlCommand command = new SqlCommand())
@@ -40,26 +41,52 @@ namespace s19551Assingment4.Services
                                             from Enrollment where semester=1 
                                             and idStudy=@id";
                     command.Parameters.AddWithValue("id", idStudy);
+                    command.Connection = connection;
 
-                    var query = command.ExecuteReader();
+                    var IdEnroll = command.ExecuteReader();
 
-                    if (query.Read())
+                    if (IdEnroll.Read())
                     {
-                        enrollmentId = query["IdEnrollment"].ToString();
+                        enrollmentId = int.Parse(IdEnroll["IdEnrollment"].ToString());
+                        IdEnroll.Close();
                     }
                     else
                     {
-                        //adding enrollment
-                        command.CommandText = "insert into enrollment values(@id,@semester,@IsStudy,@startDate)";
-                        command.Parameters.AddWithValue("Id", 4);
-                        command.Parameters.AddWithValue("semester", 1);
-                        command.Parameters.AddWithValue("idStudy", idStudy);
-                        command.Parameters.AddWithValue("startdate", DateTime.Now);
-                        command.ExecuteNonQuery();
-                        enrollmentId = 4.ToString();
+                        IdEnroll.Close();
+                        using (SqlCommand enrollCommand= new SqlCommand())
+                        {
+                            enrollCommand.CommandText = @"select max(IdEnrollment) as maxId
+                                                          from Enrollment";
+                            enrollCommand.Connection = connection;
+                            var max = enrollCommand.ExecuteReader();
+                            if (max.Read())
+                            {
+                                enrollmentId = int.Parse(max["maxId"].ToString());
+                            }
+                            else
+                            {
+                                enrollmentId = 1;
+                            }
+                            max.Close();
+                           
+                        }
+                        //adding 
+                        using (SqlCommand sqlCommand = new SqlCommand())
+                        {
+                            sqlCommand.CommandText = @"insert into enrollment
+                                                       values(@id,@semester,@IsStudy,@startDate)";
+                            sqlCommand.Parameters.AddWithValue("Id", enrollmentId);
+                            sqlCommand.Parameters.AddWithValue("semester", 1);
+                            sqlCommand.Parameters.AddWithValue("idStudy", idStudy);
+                            sqlCommand.Parameters.AddWithValue("startdate", DateTime.Now);
+                            sqlCommand.Connection = connection;
+                            sqlCommand.ExecuteNonQuery();
+                            
+                        }
                     }
 
                 }
+
                 using (SqlCommand command = new SqlCommand())
                 {
                     //Adding student
@@ -67,23 +94,28 @@ namespace s19551Assingment4.Services
                                             from student 
                                             where indexnumber=@index";
                     command.Parameters.AddWithValue("index", request.IndexNumber);
-
+                    command.Connection = connection;
                     var index = command.ExecuteReader();
                     if (index.Read())
                     {
                         return null;
                     }
 
-                    command.CommandText = @"insert into Student 
+                    index.Close();                    
+                }
+
+                using (SqlCommand commandInsert = new SqlCommand())
+                {
+                    commandInsert.CommandText = @"insert into Student 
                                             values(@indexnumber,@firstname,@lastname,@birthdate,@idenrollment)";
-
-                    command.Parameters.AddWithValue("indexnumber", request.IndexNumber);
-                    command.Parameters.AddWithValue("firstname", request.Name);
-                    command.Parameters.AddWithValue("lastname", request.Surname);
-                    command.Parameters.AddWithValue("birthdate", request.Birthdate);
-                    command.Parameters.AddWithValue("idenrollment", enrollmentId);
-
-                    command.ExecuteNonQuery();
+                    commandInsert.Connection = connection;
+                    commandInsert.Parameters.AddWithValue("indexnumber", request.IndexNumber);
+                    commandInsert.Parameters.AddWithValue("firstname", request.Name);
+                    commandInsert.Parameters.AddWithValue("lastname", request.Surname);
+                    commandInsert.Parameters.AddWithValue("birthdate", request.Birthdate);
+                    commandInsert.Parameters.AddWithValue("idenrollment", enrollmentId);
+                  
+                    commandInsert.ExecuteNonQuery();
 
                 }
             }
