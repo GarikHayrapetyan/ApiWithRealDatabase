@@ -70,7 +70,7 @@ namespace s19551Assingment4.Services
                             max.Close();
                            
                         }
-                        //adding 
+                        //adding new enrollment
                         using (SqlCommand sqlCommand = new SqlCommand())
                         {
                             sqlCommand.CommandText = @"insert into enrollment
