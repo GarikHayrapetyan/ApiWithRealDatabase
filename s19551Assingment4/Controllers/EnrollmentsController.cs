@@ -24,6 +24,7 @@ namespace s19551Assingment4.Controllers
         }
 
 
+
         [HttpPost("promotion")]
         public IActionResult PromoteStudents(string study, int semester)
         {
