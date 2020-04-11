@@ -28,6 +28,7 @@ namespace s19551Assingment4.Controllers
         [HttpPost("promotion")]
         public IActionResult PromoteStudents(string study, int semester)
         {
+
             var r = _db.PromoteStudent(study, semester);
             if (r != null)
                 return Ok(r);
