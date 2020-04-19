@@ -14,6 +14,7 @@ namespace s19551Assingment4.Services
             {
                 string idStudy;
                 int enrollmentId;
+                SqlTransaction transaction = connection.BeginTransaction();
                 using (SqlCommand command = new SqlCommand())
                 {
                     command.CommandText = "select IdStudy from studies where name=@name";
@@ -27,6 +28,7 @@ namespace s19551Assingment4.Services
 
                     if (!query.Read())
                     {
+                        transaction.Rollback();
                         return null;
                     }
 
@@ -72,15 +74,25 @@ namespace s19551Assingment4.Services
                         }
                         //adding new enrollment
                         using (SqlCommand sqlCommand = new SqlCommand())
-                        {
-                            sqlCommand.CommandText = @"insert into enrollment
+                        {                        
+                            sqlCommand.Transaction = transaction;
+
+                            try
+                            {
+                                sqlCommand.CommandText = @"insert into enrollment
                                                        values(@id,@semester,@IsStudy,@startDate)";
-                            sqlCommand.Parameters.AddWithValue("Id", enrollmentId);
-                            sqlCommand.Parameters.AddWithValue("semester", 1);
-                            sqlCommand.Parameters.AddWithValue("idStudy", idStudy);
-                            sqlCommand.Parameters.AddWithValue("startdate", DateTime.Now);
-                            sqlCommand.Connection = connection;
-                            sqlCommand.ExecuteNonQuery();
+                                sqlCommand.Parameters.AddWithValue("Id", enrollmentId);
+                                sqlCommand.Parameters.AddWithValue("semester", 1);
+                                sqlCommand.Parameters.AddWithValue("idStudy", idStudy);
+                                sqlCommand.Parameters.AddWithValue("startdate", DateTime.Now);
+                                sqlCommand.Connection = connection;
+                                sqlCommand.ExecuteNonQuery();
+                                transaction.Commit();
+                            }
+                            catch (SqlException ex)
+                            {
+                                transaction.Rollback();
+                            }
                             
                         }
                     }
@@ -98,6 +110,7 @@ namespace s19551Assingment4.Services
                     var index = command.ExecuteReader();
                     if (index.Read())
                     {
+                        transaction.Rollback();
                         return null;
                     }
 
@@ -114,54 +127,66 @@ namespace s19551Assingment4.Services
                     commandInsert.Parameters.AddWithValue("lastname", request.Surname);
                     commandInsert.Parameters.AddWithValue("birthdate", request.Birthdate);
                     commandInsert.Parameters.AddWithValue("idenrollment", enrollmentId);
-                  
-                    commandInsert.ExecuteNonQuery();
 
+                    try
+                    {
+                        commandInsert.ExecuteNonQuery();
+                    }catch(SqlException ex)
+                    {
+                        transaction.Rollback();
+                    }
                 }
             }
 
             return "Done!!";
         }
-        
+
 
 
         public EnrollStudentResponse PromoteStudent(string study, int semester)
         {
             using (SqlConnection connection = new SqlConnection(Static.CONNECTION_STRING))
-            using (SqlCommand command = new SqlCommand())
             {
-                command.CommandText = "PromoteStudent";
-                command.CommandType = System.Data.CommandType.StoredProcedure;
-                command.Connection = connection;
-                command.Parameters.AddWithValue("@studyName", study);
-                command.Parameters.AddWithValue("@semester", semester);
-
-                connection.Open();
-                try
+                SqlTransaction transaction = connection.BeginTransaction();
+                using (SqlCommand command = new SqlCommand())
                 {
-                    var reader=command.ExecuteReader();
-                    if (reader.Read())
+                    command.CommandText = "PromoteStudent";
+                    command.CommandType = System.Data.CommandType.StoredProcedure;
+                    command.Connection = connection;
+                    command.Parameters.AddWithValue("@studyName", study);
+                    command.Parameters.AddWithValue("@semester", semester);
+
+                    connection.Open();
+                    try
                     {
-                        int id = int.Parse(reader["IdEnrollment"].ToString());
-                        var sem = reader["semester"].ToString();
-                        var idStudy = int.Parse(reader["IdStudy"].ToString());
-                        var startDate = DateTime.Parse(reader["StartDate"].ToString());
+                        var reader = command.ExecuteReader();
+                        if (reader.Read())
+                        {
+                            int id = int.Parse(reader["IdEnrollment"].ToString());
+                            var sem = reader["semester"].ToString();
+                            var idStudy = int.Parse(reader["IdStudy"].ToString());
+                            var startDate = DateTime.Parse(reader["StartDate"].ToString());
 
-                        return new EnrollStudentResponse {
-                            IdEnrollment = id,
-                            IdStudy=idStudy,
-                            Semester=sem,
-                            StartDate=startDate};
+                            return new EnrollStudentResponse
+                            {
+                                IdEnrollment = id,
+                                IdStudy = idStudy,
+                                Semester = sem,
+                                StartDate = startDate
+                            };
+                        }
+                        transaction.Rollback();
+                        return null;
+
+
                     }
-                    return null;
-                    
-                    
+                    catch (SqlException e)
+                    {
+                        transaction.Rollback();
+                        return null;
+                    }
+
                 }
-                catch (SqlException e)
-                {
-                    return null;
-                }
-                
             }
         }
     }
