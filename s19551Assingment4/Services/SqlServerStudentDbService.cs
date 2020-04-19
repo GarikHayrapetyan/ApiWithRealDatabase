@@ -131,6 +131,7 @@ namespace s19551Assingment4.Services
                     try
                     {
                         commandInsert.ExecuteNonQuery();
+
                     }catch(SqlException ex)
                     {
                         transaction.Rollback();
